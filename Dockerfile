@@ -3,13 +3,11 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Vite embute as variáveis no bundle durante o build, não em runtime.
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_PROJECT_ID
-ARG VITE_SUPABASE_PUBLISHABLE_KEY
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
-ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
+# As VITE_* vêm de .env.production, lido pelo Vite durante o build.
+#
+# Nada de ARG/ENV para elas aqui: um ENV declarado sem valor vira string
+# vazia, e variável de ambiente tem precedência sobre arquivo .env no Vite.
+# O build entao gerava um bundle sem as credenciais, silenciosamente.
 
 COPY package.json package-lock.json ./
 RUN npm ci
