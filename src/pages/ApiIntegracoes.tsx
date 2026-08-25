@@ -52,7 +52,7 @@ const EndpointCard = ({ method, path, description, params, response }: {
 );
 
 const ApiIntegracoes = () => {
-  const baseUrl = `https://ehpjcvsnyjuufmapkkrn.supabase.co/functions/v1/api-public`;
+  const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/api-public`;
 
   return (
     <MainLayout>
