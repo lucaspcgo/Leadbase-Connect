@@ -1,0 +1,37 @@
+project_id = "ehpjcvsnyjuufmapkkrn"
+
+[functions.create-team-member]
+verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.create-mercadopago-payment]
+verify_jwt = false
+
+[functions.mercadopago-webhook]
+verify_jwt = false
+
+[functions.create-stripe-checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.verify-stripe-payment]
+verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.send-scheduled-notifications]
+verify_jwt = false
+
+[functions.check-invoice-reminders]
+verify_jwt = false
+
+[functions.enrich-cnpj]
+verify_jwt = false
+
+[functions.api-public]
+verify_jwt = false

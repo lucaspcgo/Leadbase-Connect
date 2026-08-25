@@ -1,0 +1,1 @@
+ALTER TABLE public.enrichment_results ADD COLUMN fields_changed text[] DEFAULT '{}'::text[];
