@@ -1,13 +1,9 @@
 -- =====================================================================
---  LeadsBasePro - schema completo
---  PARTE 2 de 2. Gerado a partir das 104 migracoes em supabase/migrations/,
---  concatenadas em ordem cronologica.
+--  LeadsBasePro - schema completo (PARTE 2 de 2)
+--  Gerado a partir das 104 migracoes em supabase/migrations/.
 --
---  COMO USAR: cole no SQL Editor de um projeto Supabase NOVO/VAZIO
---  e execute. Rode os arquivos na ordem (parte 1, 2, 3...).
---
---  Cria apenas a ESTRUTURA (tabelas, RLS, funcoes, triggers).
---  Nao contem dados.
+--  Cole no SQL Editor de um projeto Supabase NOVO e execute as partes
+--  em ordem. Cria apenas a ESTRUTURA - nao contem dados.
 -- =====================================================================
 
 
@@ -218,8 +214,7 @@ BEGIN
   LIMIT p_limit
   OFFSET p_offset;
 END;
-$function$
-
+$function$;
 
 
 -- ---------------------------------------------------------------
@@ -423,8 +418,7 @@ BEGIN
   LIMIT p_limit
   OFFSET p_offset;
 END;
-$function$
-
+$function$;
 
 
 -- ---------------------------------------------------------------
@@ -524,7 +518,6 @@ BEGIN
 END $$;
 
 
-
 -- ---------------------------------------------------------------
 -- 20260505151714_8c694a5f-be9e-4553-be6f-a247ddc2a91b.sql
 -- ---------------------------------------------------------------
@@ -572,7 +565,6 @@ SET search_path TO 'public';
 
 REVOKE ALL ON FUNCTION public.get_empresas_public(integer, integer, text, text, text, text, text, text, text, text, uuid, boolean, boolean, boolean, date, date, text[], text, text) FROM public;
 GRANT EXECUTE ON FUNCTION public.get_empresas_public(integer, integer, text, text, text, text, text, text, text, text, uuid, boolean, boolean, boolean, date, date, text[], text, text) TO authenticated;
-
 
 
 -- ---------------------------------------------------------------
@@ -641,7 +633,6 @@ EXCEPTION
     RETURN;
 END;
 $function$;
-
 
 
 -- ---------------------------------------------------------------

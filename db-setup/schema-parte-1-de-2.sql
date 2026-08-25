@@ -1,13 +1,9 @@
 -- =====================================================================
---  LeadsBasePro - schema completo
---  PARTE 1 de 2. Gerado a partir das 104 migracoes em supabase/migrations/,
---  concatenadas em ordem cronologica.
+--  LeadsBasePro - schema completo (PARTE 1 de 2)
+--  Gerado a partir das 104 migracoes em supabase/migrations/.
 --
---  COMO USAR: cole no SQL Editor de um projeto Supabase NOVO/VAZIO
---  e execute. Rode os arquivos na ordem (parte 1, 2, 3...).
---
---  Cria apenas a ESTRUTURA (tabelas, RLS, funcoes, triggers).
---  Nao contem dados.
+--  Cole no SQL Editor de um projeto Supabase NOVO e execute as partes
+--  em ordem. Cria apenas a ESTRUTURA - nao contem dados.
 -- =====================================================================
 
 
@@ -2762,7 +2758,6 @@ END;
 $$;
 
 
-
 -- ---------------------------------------------------------------
 -- 20260128142710_2e3315fd-f767-404f-ae5d-bf2639f532bc.sql
 -- ---------------------------------------------------------------
@@ -3697,7 +3692,6 @@ GRANT SELECT ON public.empresas_filter_options TO authenticated;
 GRANT EXECUTE ON FUNCTION public.refresh_filter_options() TO authenticated;
 
 
-
 -- ---------------------------------------------------------------
 -- 20260130124738_01f5c4f9-fe42-4164-b828-dac5296de74c.sql
 -- ---------------------------------------------------------------
@@ -3715,7 +3709,6 @@ REVOKE SELECT ON public.empresas_filter_options FROM anon;
 
 -- The function get_filter_options will still work because it's SECURITY DEFINER
 -- This means the API cannot query the materialized view directly
-
 
 
 -- ---------------------------------------------------------------
@@ -3744,7 +3737,6 @@ BEGIN
   END;
 END;
 $$;
-
 
 
 -- ---------------------------------------------------------------
@@ -4176,7 +4168,6 @@ CREATE INDEX IF NOT EXISTS idx_empresas_uf_mun_cnae
 ON public.empresas (uf, municipio, cnae_codigo);
 
 
-
 -- ---------------------------------------------------------------
 -- 20260203134915_798b8414-0db3-4948-9e0e-6a8d9add9c50.sql
 -- ---------------------------------------------------------------
@@ -4597,7 +4588,6 @@ CREATE TRIGGER update_commissions_updated_at
   EXECUTE FUNCTION public.update_updated_at_column();
 
 
-
 -- ---------------------------------------------------------------
 -- 20260205125321_22e0128a-83f4-4df6-b651-bd8ab2361ce1.sql
 -- ---------------------------------------------------------------
@@ -4926,7 +4916,6 @@ ON public.enrichment_logs FOR UPDATE
 USING (is_admin(auth.uid()));
 
 
-
 -- ---------------------------------------------------------------
 -- 20260209194630_f317d3ee-668c-4759-bb73-27ace9e3eb2c.sql
 -- ---------------------------------------------------------------
@@ -4980,7 +4969,6 @@ CREATE TRIGGER trg_auto_queue_enrichment
   BEFORE INSERT ON public.empresas
   FOR EACH ROW
   EXECUTE FUNCTION public.auto_queue_enrichment();
-
 
 
 -- ---------------------------------------------------------------
@@ -5178,7 +5166,6 @@ END;
 $function$;
 
 
-
 -- ---------------------------------------------------------------
 -- 20260211151009_f6411520-4f07-4633-ab20-f9184eb93078.sql
 -- ---------------------------------------------------------------
@@ -5310,7 +5297,6 @@ END;
 $$;
 
 
-
 -- ---------------------------------------------------------------
 -- 20260211152123_2c0c6703-ecda-42ce-aa9a-6b103de64912.sql
 -- ---------------------------------------------------------------
@@ -5323,7 +5309,6 @@ CREATE POLICY "Users can view own notifications"
 ON public.scheduled_notifications
 FOR SELECT
 USING (auth.uid() = target_user_id);
-
 
 
 -- ---------------------------------------------------------------
@@ -5371,7 +5356,6 @@ END;
 $function$;
 
 
-
 -- ---------------------------------------------------------------
 -- 20260212135559_33d4cb46-454c-45b4-8da2-6cbb786846bc.sql
 -- ---------------------------------------------------------------
@@ -5400,7 +5384,6 @@ BEGIN
   ORDER BY count DESC;
 END;
 $function$;
-
 
 
 -- ---------------------------------------------------------------
@@ -5451,7 +5434,6 @@ CREATE INDEX idx_coupon_usages_user_id ON public.coupon_usages(user_id);
 CREATE INDEX idx_coupon_usages_created_at ON public.coupon_usages(created_at);
 
 
-
 -- ---------------------------------------------------------------
 -- 20260216134011_bf062df6-bd53-417f-bd49-c632217e809d.sql
 -- ---------------------------------------------------------------
@@ -5463,7 +5445,6 @@ ALTER TABLE public.api_keys ALTER COLUMN permissions SET DEFAULT '{read_empresas
 UPDATE public.api_keys 
 SET permissions = '{read_empresas,read_socios,read_cnaes}'::text[]
 WHERE permissions = '{read_empresas}'::text[];
-
 
 
 -- ---------------------------------------------------------------
@@ -6113,7 +6094,6 @@ END;
 $function$;
 
 
-
 -- ---------------------------------------------------------------
 -- 20260505143436_ddfc0b5e-4feb-4440-acda-78bea3a662ae.sql
 -- ---------------------------------------------------------------
@@ -6148,7 +6128,6 @@ UNION ALL
   WHERE empresas.uf IS NOT NULL AND empresas.uf != '';
 
 CREATE INDEX IF NOT EXISTS idx_empresas_filter_options_tipo_valor ON public.empresas_filter_options (tipo, valor);
-
 
 
 -- ---------------------------------------------------------------
@@ -6241,7 +6220,6 @@ EXCEPTION
     RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 
 
 -- ---------------------------------------------------------------
@@ -6411,7 +6389,6 @@ $function$;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE INDEX IF NOT EXISTS idx_empresas_cnaes_secundarios_trgm ON public.empresas USING gin (cnaes_secundarios gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_empresas_razao_social_trgm ON public.empresas USING gin (razao_social gin_trgm_ops);
-
 
 
 -- ---------------------------------------------------------------
@@ -6641,7 +6618,6 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 
-
 -- ---------------------------------------------------------------
 -- 20260505150357_a5b105da-2fac-4af9-b4bd-0b95fdab8e84.sql
 -- ---------------------------------------------------------------
@@ -6654,10 +6630,8 @@ CREATE INDEX IF NOT EXISTS idx_empresas_uf_mun_cnae_fiscal
 ON public.empresas (uf, municipio, cnae_fiscal);
 
 
-
 -- ---------------------------------------------------------------
 -- 20260505150619_6fd8cd62-053d-42fc-a1e5-28e0ddfd115e.sql
 -- ---------------------------------------------------------------
 CREATE INDEX IF NOT EXISTS idx_empresas_cnaes_secundarios_array_expr 
 ON public.empresas USING gin (string_to_array(cnaes_secundarios, ','));
-
