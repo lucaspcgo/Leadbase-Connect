@@ -1,8 +1,11 @@
 node_modules
 dist
 .git
+# .env local fica de fora, mas .env.production precisa entrar no build:
+# e dele que o Vite le as VITE_* ao compilar.
 .env
-.env.*
+.env.local
+.env.*.local
 *.log
 .DS_Store
 .lovable
