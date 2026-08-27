@@ -500,7 +500,7 @@ const AdminConfiguracoes = () => {
                   Configure o seguinte URL no painel do Mercado Pago para receber notificações de pagamento:
                 </p>
                 <code className="block bg-background p-2 rounded text-sm font-mono">
-                  {window.location.origin}/api/webhooks/mercadopago
+                  {import.meta.env.VITE_SUPABASE_URL}/functions/v1/mercadopago-webhook
                 </code>
               </div>
               
@@ -636,11 +636,12 @@ const AdminConfiguracoes = () => {
                   Configuração do Webhook
                 </h4>
                 <p className="text-sm text-muted-foreground">
-                  Configure o seguinte URL no painel do PayPal Developer para receber notificações:
+                  Não há webhook de PayPal implementado neste projeto. Não
+                  existe funcao correspondente em <code>supabase/functions/</code>,
+                  diferente de Stripe e Mercado Pago. Os pagamentos por PayPal
+                  não serão confirmados automaticamente enquanto ela não for
+                  criada.
                 </p>
-                <code className="block bg-background p-2 rounded text-sm font-mono">
-                  {window.location.origin}/api/webhooks/paypal
-                </code>
               </div>
               
               <div className="flex justify-end">
@@ -791,7 +792,7 @@ const AdminConfiguracoes = () => {
                   Configure o seguinte URL no painel do Stripe para receber notificações de pagamento:
                 </p>
                 <code className="block bg-background p-2 rounded text-sm font-mono">
-                  {window.location.origin}/api/webhooks/stripe
+                  {import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-webhook
                 </code>
               </div>
               
