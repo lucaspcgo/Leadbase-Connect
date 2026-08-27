@@ -49,7 +49,11 @@ Deno.serve(async (req: Request) => {
     // Verify webhook signature if webhook secret is configured
     if (paymentConfig.stripe_webhook_secret && signature) {
       try {
-        event = stripe.webhooks.constructEvent(
+        // constructEventAsync, e nao constructEvent: no Deno o SDK do Stripe
+        // assina via Web Crypto, que e assincrona. A versao sincrona lanca
+        // "SubtleCryptoProvider cannot be used in a synchronous context" e
+        // toda notificacao de pagamento era recusada com 400.
+        event = await stripe.webhooks.constructEventAsync(
           body,
           signature,
           paymentConfig.stripe_webhook_secret
