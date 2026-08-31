@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface SubscriptionWarningState {
@@ -16,86 +15,54 @@ interface SubscriptionWarningState {
 const WARNING_DAYS_THRESHOLD = 5;
 const POPUP_DISMISSED_KEY = 'subscription_warning_dismissed';
 
+/**
+ * Vencimento do plano, a partir de profiles.plan_expires_at.
+ *
+ * Antes isto lia a tabela `subscriptions`, procurando uma linha com
+ * status = 'ACTIVE'. Quem tinha plano pago no perfil mas nenhuma linha ali --
+ * o caso de todo cliente liberado manualmente pelo painel -- caia no ramo
+ * "plano pago sem assinatura ativa", recebia daysRemaining = 0 e era tratado
+ * como vencido, vendo "Acesso Bloqueado" mesmo com o plano em dia.
+ *
+ * A validade agora tem uma fonte unica: plan_expires_at, que e o campo que o
+ * admin controla em Usuarios > Validade do plano. `subscriptions` volta a ser
+ * so historico de cobranca.
+ *
+ * plan_expires_at nulo num plano pago = plano sem data para vencer.
+ */
 export const useSubscriptionWarning = (): SubscriptionWarningState => {
-  const { user, isTeamMember, teamOwnerInfo } = useAuth();
-  const [daysRemaining, setDaysRemaining] = useState<number | null>(null);
-  const [expirationDate, setExpirationDate] = useState<Date | null>(null);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
+  // planExpiresAt ja vem resolvido do AuthContext: para membros de equipe e o
+  // vencimento do dono do plano, nao o do proprio membro.
+  const { user } = useAuth();
   const [showWarningPopup, setShowWarningPopup] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  const fetchSubscriptionData = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
+  const isPaidPlan = !!user?.plan && user.plan.id !== 'free';
+  const expirationDate = isPaidPlan ? user?.planExpiresAt ?? null : null;
 
-    try {
-      // If user is a team member, check owner's subscription
-      const userIdToCheck = isTeamMember && teamOwnerInfo ? teamOwnerInfo.ownerId : user.id;
+  const daysRemaining = expirationDate
+    ? Math.ceil((expirationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
 
-      // Fetch active subscription
-      const { data: subscription, error } = await supabase
-        .from('subscriptions')
-        .select('current_period_end, status, plan_id')
-        .eq('user_id', userIdToCheck)
-        .eq('status', 'ACTIVE')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+  const isExpiringSoon =
+    daysRemaining !== null && daysRemaining <= WARNING_DAYS_THRESHOLD && daysRemaining > 0;
+  const isExpired = daysRemaining !== null && daysRemaining <= 0;
 
-      if (error) {
-        console.error('Error fetching subscription:', error);
-        setLoading(false);
-        return;
-      }
-
-      if (subscription && subscription.current_period_end) {
-        const endDate = new Date(subscription.current_period_end);
-        const now = new Date();
-        const diffTime = endDate.getTime() - now.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        setExpirationDate(endDate);
-        setDaysRemaining(diffDays);
-        setHasActiveSubscription(true);
-
-        // Check if popup should be shown (5 days or less and not dismissed today)
-        if (diffDays <= WARNING_DAYS_THRESHOLD && diffDays > 0) {
-          const dismissedDate = localStorage.getItem(POPUP_DISMISSED_KEY);
-          const today = new Date().toDateString();
-          
-          if (dismissedDate !== today) {
-            setShowWarningPopup(true);
-          }
-        }
-      } else {
-        // Check if user has a paid plan in profile but no active subscription
-        // This might indicate an expired subscription
-        if (user.plan && user.plan.id !== 'free') {
-          setHasActiveSubscription(false);
-          setDaysRemaining(0);
-        }
-      }
-    } catch (err) {
-      console.error('Error in fetchSubscriptionData:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, isTeamMember, teamOwnerInfo]);
-
-  useEffect(() => {
-    fetchSubscriptionData();
-  }, [fetchSubscriptionData]);
+  // Plano pago sem data de vencimento continua ativo indefinidamente.
+  const hasActiveSubscription = isPaidPlan && !isExpired;
 
   const dismissPopup = useCallback(() => {
-    const today = new Date().toDateString();
-    localStorage.setItem(POPUP_DISMISSED_KEY, today);
+    localStorage.setItem(POPUP_DISMISSED_KEY, new Date().toDateString());
     setShowWarningPopup(false);
   }, []);
 
-  const isExpiringSoon = daysRemaining !== null && daysRemaining <= WARNING_DAYS_THRESHOLD && daysRemaining > 0;
-  const isExpired = daysRemaining !== null && daysRemaining <= 0;
+  useEffect(() => {
+    if (!isExpiringSoon) {
+      setShowWarningPopup(false);
+      return;
+    }
+    const dismissedDate = localStorage.getItem(POPUP_DISMISSED_KEY);
+    setShowWarningPopup(dismissedDate !== new Date().toDateString());
+  }, [isExpiringSoon]);
 
   return {
     daysRemaining,
@@ -105,6 +72,7 @@ export const useSubscriptionWarning = (): SubscriptionWarningState => {
     hasActiveSubscription,
     showWarningPopup,
     dismissPopup,
-    loading,
+    // O plano ja vem carregado com o usuario; nao ha consulta propria a esperar.
+    loading: false,
   };
 };
