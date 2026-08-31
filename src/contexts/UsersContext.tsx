@@ -552,10 +552,12 @@ export const UsersProvider = ({ children }: { children: ReactNode }) => {
     id: string,
     expiresAt: Date | null
   ): Promise<boolean> => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ plan_expires_at: expiresAt ? expiresAt.toISOString() : null })
-      .eq('user_id', id);
+    // Via RPC, e nao update direto na tabela: a checagem de admin fica no
+    // banco, junto com o registro em financial_audit_logs.
+    const { error } = await supabase.rpc('definir_validade_plano', {
+      p_user_id: id,
+      p_expires_at: expiresAt ? expiresAt.toISOString() : null,
+    });
 
     if (error) {
       console.error('Error setting plan expiry:', error);

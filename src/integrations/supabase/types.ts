@@ -2099,6 +2099,10 @@ export type Database = {
         Returns: boolean
       }
       expirar_planos_vencidos: { Args: Record<string, never>; Returns: number }
+      definir_validade_plano: {
+        Args: { p_user_id: string; p_expires_at: string | null }
+        Returns: string | null
+      }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       prorrogar_plano: {
         Args: { p_user_id: string; p_dias: number; p_plan_id?: string | null }
