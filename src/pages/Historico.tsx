@@ -350,45 +350,49 @@ const Historico = () => {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   </div>
-                ) : subscriptions.length === 0 ? (
+                ) : !user?.plan || user.plan.id === 'free' ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Crown className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>Nenhuma assinatura encontrada</p>
                     <p className="text-sm">Você está no plano gratuito</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {subscriptions.filter(s => s.status === 'ACTIVE').slice(0, 1).map((sub) => (
-                      <div key={sub.id} className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Plano</p>
-                          <p className="font-medium">{sub.plan_name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Status</p>
-                          <Badge className={
-                            sub.status === 'ACTIVE' ? 'bg-success/20 text-success' :
-                            sub.status === 'PENDING' ? 'bg-warning/20 text-warning' :
-                            sub.status === 'CANCELLED' ? 'bg-destructive/20 text-destructive' :
-                            'bg-muted text-muted-foreground'
-                          }>
-                            {sub.status === 'ACTIVE' ? 'Ativo' : 
-                             sub.status === 'PENDING' ? 'Pendente' :
-                             sub.status === 'CANCELLED' ? 'Cancelado' : sub.status}
+                  /* O plano vem do perfil, nao da tabela subscriptions: quem foi
+                     liberado pelo painel nao tem linha la, e via "plano gratuito"
+                     mesmo estando no Pro. */
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Plano</p>
+                      <p className="font-medium">{user.plan.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      {(() => {
+                        const vencido =
+                          !!user.planExpiresAt && user.planExpiresAt.getTime() < Date.now();
+                        return (
+                          <Badge className={vencido
+                            ? 'bg-destructive/20 text-destructive'
+                            : 'bg-success/20 text-success'}>
+                            {vencido ? 'Vencido' : 'Ativo'}
                           </Badge>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Ciclo</p>
-                          <p className="font-medium">{sub.billing_cycle === 'YEARLY' ? 'Anual' : 'Mensal'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Vencimento</p>
-                          <p className="font-mono text-sm">
-                            {sub.current_period_end ? formatDate(sub.current_period_end) : '-'}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })()}
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Empresas por mês</p>
+                      <p className="font-medium">
+                        {(user.monthlyLimit ?? user.plan.monthlyCompanyLimit).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Válido até</p>
+                      <p className="font-mono text-sm">
+                        {user.planExpiresAt
+                          ? user.planExpiresAt.toLocaleDateString('pt-BR')
+                          : 'Sem prazo'}
+                      </p>
+                    </div>
                   </div>
                 )}
               </CardContent>
