@@ -11,6 +11,7 @@ export interface User {
   extraCredits: number; // Créditos extras (não expiram)
   plan: Plan | null;
   planStartDate: Date | null; // Data de início do plano para calcular renovação
+  planExpiresAt: Date | null; // Validade do plano pago. null = não expira
   monthlyLimit?: number; // Override do limite mensal
   createdAt: Date;
   emailVerified: boolean;

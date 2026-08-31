@@ -27,6 +27,10 @@ interface UsersContextType {
   
   // Plan management
   changeUserPlan: (id: string, planId: string | null, monthlyLimit: number | undefined, adminId: string, adminName: string) => Promise<void>;
+  /** Soma dias a validade do plano. Se ainda ha dias a vencer, soma em cima deles. */
+  extendUserPlan: (id: string, days: number, planId?: string) => Promise<Date | null>;
+  /** Define a validade diretamente. null remove a validade (plano nao expira). */
+  setUserPlanExpiry: (id: string, expiresAt: Date | null) => Promise<boolean>;
   
   // Credit management
   adjustCredits: (userId: string, amount: number, reason: string, adminId: string, adminName: string) => Promise<void>;
@@ -95,6 +99,7 @@ export const UsersProvider = ({ children }: { children: ReactNode }) => {
           extraCredits: profile.extra_credits || 0,
           plan: userPlan,
           planStartDate: profile.plan_start_date ? new Date(profile.plan_start_date) : null,
+          planExpiresAt: profile.plan_expires_at ? new Date(profile.plan_expires_at) : null,
           monthlyLimit: profile.monthly_limit_override || undefined,
           createdAt: new Date(profile.created_at),
           emailVerified: true,
@@ -516,6 +521,51 @@ export const UsersProvider = ({ children }: { children: ReactNode }) => {
     await fetchUsers();
   }, [users, addAuditLog, fetchUsers]);
 
+  // Validade do plano
+  //
+  // A soma dos dias e feita no banco, pela funcao prorrogar_plano: ela
+  // confere se quem chamou e admin, soma em cima da validade que ja existe
+  // (para o cliente nao perder os dias restantes) e registra em
+  // financial_audit_logs. Fazer essa conta no navegador deixaria a data
+  // depender do relogio da maquina do admin.
+  const extendUserPlan = useCallback(async (
+    id: string,
+    days: number,
+    planId?: string
+  ): Promise<Date | null> => {
+    const { data, error } = await supabase.rpc('prorrogar_plano', {
+      p_user_id: id,
+      p_dias: days,
+      p_plan_id: planId ?? null,
+    });
+
+    if (error) {
+      console.error('Error extending plan:', error);
+      return null;
+    }
+
+    await fetchUsers();
+    return data ? new Date(data as string) : null;
+  }, [fetchUsers]);
+
+  const setUserPlanExpiry = useCallback(async (
+    id: string,
+    expiresAt: Date | null
+  ): Promise<boolean> => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ plan_expires_at: expiresAt ? expiresAt.toISOString() : null })
+      .eq('user_id', id);
+
+    if (error) {
+      console.error('Error setting plan expiry:', error);
+      return false;
+    }
+
+    await fetchUsers();
+    return true;
+  }, [fetchUsers]);
+
   // Credit management
   const adjustCredits = useCallback(async (
     userId: string, 
@@ -608,6 +658,8 @@ export const UsersProvider = ({ children }: { children: ReactNode }) => {
       unblockUser,
       changeUserRole,
       changeUserPlan,
+      extendUserPlan,
+      setUserPlanExpiry,
       adjustCredits,
       getCreditLedgerByUser,
       getAuditLogsByUser,

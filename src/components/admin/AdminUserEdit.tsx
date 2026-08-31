@@ -27,13 +27,16 @@ const AdminUserEdit = () => {
   const { user: currentUser, isAdmin } = useAuth();
   const { 
     getUserById, updateUser, deleteUser, blockUser, unblockUser, 
-    changeUserRole, changeUserPlan, adjustCredits, canManageRole, 
-    isMasterAdmin, getMasterAdminCount, isLoading
+    changeUserRole, changeUserPlan, adjustCredits, canManageRole,
+    isMasterAdmin, getMasterAdminCount, isLoading,
+    extendUserPlan, setUserPlanExpiry
   } = useUsers();
   
   const user = userId ? getUserById(userId) : null;
   
   const [formData, setFormData] = useState<Partial<User>>({});
+  const [diasPersonalizados, setDiasPersonalizados] = useState('');
+  const [prorrogando, setProrrogando] = useState(false);
   const [showBlockDialog, setShowBlockDialog] = useState(false);
   const [blockReason, setBlockReason] = useState('');
   const [showCreditDialog, setShowCreditDialog] = useState(false);
@@ -199,6 +202,48 @@ const AdminUserEdit = () => {
       currentUser.name
     );
     toast({ title: 'Limite mensal atualizado' });
+  };
+
+  const handleExtendPlan = async (dias: number) => {
+    if (!user || !Number.isFinite(dias) || dias < 1) {
+      toast({
+        title: 'Número de dias inválido',
+        description: 'Informe um número inteiro maior que zero.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setProrrogando(true);
+    const novaData = await extendUserPlan(user.id, dias);
+    setProrrogando(false);
+
+    if (!novaData) {
+      toast({
+        title: 'Não foi possível prorrogar',
+        description: 'Verifique sua conexão e se você tem permissão de administrador.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setDiasPersonalizados('');
+    toast({
+      title: `Plano prorrogado por ${dias} dia${dias > 1 ? 's' : ''}`,
+      description: `Nova validade: ${novaData.toLocaleDateString('pt-BR')}`,
+    });
+  };
+
+  const handleRemoveExpiry = async () => {
+    if (!user) return;
+
+    setProrrogando(true);
+    const ok = await setUserPlanExpiry(user.id, null);
+    setProrrogando(false);
+
+    toast(ok
+      ? { title: 'Validade removida', description: 'O plano deste cliente não expira mais.' }
+      : { title: 'Não foi possível remover a validade', variant: 'destructive' as const });
   };
 
   const handleDelete = async () => {
@@ -508,6 +553,88 @@ const AdminUserEdit = () => {
               </Select>
             </div>
             
+            <div className="rounded-lg border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base">Validade do plano</Label>
+                {(() => {
+                  if (!user.planExpiresAt) {
+                    return (
+                      <Badge variant="outline">Não expira</Badge>
+                    );
+                  }
+                  const dias = Math.ceil(
+                    (user.planExpiresAt.getTime() - Date.now()) / 86400000
+                  );
+                  if (dias < 0) {
+                    return <Badge variant="destructive">Vencido</Badge>;
+                  }
+                  return (
+                    <Badge
+                      variant="outline"
+                      className={dias <= 7 ? 'text-destructive border-destructive' : 'text-success border-success'}
+                    >
+                      {dias === 0 ? 'Vence hoje' : `${dias} dia${dias > 1 ? 's' : ''}`}
+                    </Badge>
+                  );
+                })()}
+              </div>
+
+              <p className="text-sm text-muted-foreground">
+                {user.planExpiresAt
+                  ? `Vence em ${user.planExpiresAt.toLocaleDateString('pt-BR')}. Ao vencer, o cliente volta para o plano Free automaticamente.`
+                  : 'Sem data de vencimento: o cliente mantém este plano até alguém alterar.'}
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { rotulo: '+7 dias', dias: 7 },
+                  { rotulo: '+1 mês', dias: 30 },
+                  { rotulo: '+3 meses', dias: 90 },
+                  { rotulo: '+6 meses', dias: 180 },
+                  { rotulo: '+1 ano', dias: 365 },
+                ].map(opcao => (
+                  <Button
+                    key={opcao.dias}
+                    variant="outline"
+                    size="sm"
+                    disabled={prorrogando}
+                    onClick={() => handleExtendPlan(opcao.dias)}
+                  >
+                    {opcao.rotulo}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  value={diasPersonalizados}
+                  onChange={(e) => setDiasPersonalizados(e.target.value)}
+                  placeholder="Outro número de dias"
+                />
+                <Button
+                  variant="outline"
+                  disabled={prorrogando || !diasPersonalizados}
+                  onClick={() => handleExtendPlan(parseInt(diasPersonalizados, 10))}
+                >
+                  Prorrogar
+                </Button>
+              </div>
+
+              {user.planExpiresAt && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground"
+                  disabled={prorrogando}
+                  onClick={handleRemoveExpiry}
+                >
+                  Remover validade (não expirar)
+                </Button>
+              )}
+            </div>
+
             <div>
               <Label>Limite Mensal (override)</Label>
               <div className="flex gap-2">

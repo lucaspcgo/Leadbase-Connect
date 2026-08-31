@@ -1361,6 +1361,7 @@ export type Database = {
           monthly_limit_override: number | null
           name: string | null
           plan_id: string
+          plan_expires_at: string | null
           plan_start_date: string | null
           status: string
           updated_at: string
@@ -1373,6 +1374,7 @@ export type Database = {
           monthly_limit_override?: number | null
           name?: string | null
           plan_id?: string
+          plan_expires_at?: string | null
           plan_start_date?: string | null
           status?: string
           updated_at?: string
@@ -1385,6 +1387,7 @@ export type Database = {
           monthly_limit_override?: number | null
           name?: string | null
           plan_id?: string
+          plan_expires_at?: string | null
           plan_start_date?: string | null
           status?: string
           updated_at?: string
@@ -2095,7 +2098,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      expirar_planos_vencidos: { Args: Record<string, never>; Returns: number }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      prorrogar_plano: {
+        Args: { p_user_id: string; p_dias: number; p_plan_id?: string | null }
+        Returns: string
+      }
       log_search_performance: {
         Args: {
           p_error_message?: string

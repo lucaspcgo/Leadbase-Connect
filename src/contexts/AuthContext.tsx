@@ -107,6 +107,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Check if user is a team member (sub-account) and get owner's plan if so
       let effectivePlanId = resolvedProfile.plan_id;
       let effectivePlanStartDate = resolvedProfile.plan_start_date;
+      let effectivePlanExpiresAt = resolvedProfile.plan_expires_at;
+
+      // Plano vencido cai para free na hora, sem esperar o cron horario do
+      // servidor. Sem isto o cliente continuaria com o plano pago ate a
+      // proxima passagem da rotina de expiracao.
+      if (
+        effectivePlanExpiresAt &&
+        new Date(effectivePlanExpiresAt).getTime() < Date.now() &&
+        effectivePlanId !== 'free'
+      ) {
+        effectivePlanId = 'free';
+        effectivePlanExpiresAt = null;
+      }
       let teamMemberStatus = false;
       let ownerInfo: TeamOwnerInfo | null = null;
       
@@ -135,7 +148,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
          // Fetch owner's profile to inherit plan settings
          const { data: ownerProfile, error: ownerProfileError } = await supabase
            .from('profiles')
-           .select('plan_id, plan_start_date')
+           .select('plan_id, plan_start_date, plan_expires_at')
            .eq('user_id', teamMembership.owner_user_id)
            .single();
 
@@ -146,6 +159,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
          if (ownerProfile) {
            effectivePlanId = ownerProfile.plan_id;
            effectivePlanStartDate = ownerProfile.plan_start_date;
+           effectivePlanExpiresAt = ownerProfile.plan_expires_at;
+
+           // O membro herda tambem o vencimento: se o plano do dono venceu,
+           // a equipe inteira cai para free junto.
+           if (
+             effectivePlanExpiresAt &&
+             new Date(effectivePlanExpiresAt).getTime() < Date.now() &&
+             effectivePlanId !== 'free'
+           ) {
+             effectivePlanId = 'free';
+             effectivePlanExpiresAt = null;
+           }
+
            console.log('Inherited plan from owner:', effectivePlanId);
          }
        }
@@ -204,6 +230,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
          extraCredits: resolvedProfile.extra_credits || 0,
         plan: userPlan,
         planStartDate: effectivePlanStartDate ? new Date(effectivePlanStartDate) : null,
+        planExpiresAt: effectivePlanExpiresAt ? new Date(effectivePlanExpiresAt) : null,
          monthlyLimit: resolvedProfile.monthly_limit_override || undefined,
          createdAt: new Date(resolvedProfile.created_at),
         emailVerified: authUser.email_confirmed_at !== null,
