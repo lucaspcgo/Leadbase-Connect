@@ -32,6 +32,9 @@ interface UsersContextType {
   /** Define a validade diretamente. null remove a validade (plano nao expira). */
   setUserPlanExpiry: (id: string, expiresAt: Date | null) => Promise<boolean>;
   
+  /** Define uma nova senha para o usuario. Retorna a mensagem de erro, ou null se deu certo. */
+  resetUserPassword: (id: string, newPassword: string) => Promise<string | null>;
+
   // Credit management
   adjustCredits: (userId: string, amount: number, reason: string, adminId: string, adminName: string) => Promise<void>;
   getCreditLedgerByUser: (userId: string) => CreditLedgerEntry[];
@@ -290,6 +293,42 @@ export const UsersProvider = ({ children }: { children: ReactNode }) => {
     // Refresh users from database
     await fetchUsers();
   }, [users, addAuditLog, fetchUsers]);
+
+  /**
+   * Troca a senha de um usuario pela edge function admin-reset-password.
+   *
+   * Nao da para fazer isto do navegador: definir a senha de outra pessoa exige
+   * a service_role, que nunca pode sair do servidor. Devolve a mensagem de erro
+   * em vez de um booleano para que a tela mostre o motivo real da recusa
+   * (nao-admin, master admin protegido, senha curta) em vez de um "falhou".
+   */
+  const resetUserPassword = useCallback(async (id: string, newPassword: string): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+        body: { userId: id, newPassword },
+      });
+
+      // Um erro HTTP (403, 400...) chega em `error` com o corpo dentro de
+      // error.context; `data.error` cobre o caso de resposta 200 com falha.
+      if (error) {
+        let mensagem = error.message;
+        try {
+          const corpo = await (error as { context?: Response }).context?.json();
+          if (corpo?.error) mensagem = corpo.error;
+        } catch {
+          // corpo nao era JSON; fica a mensagem generica
+        }
+        console.error('Erro ao redefinir senha:', error);
+        return mensagem || 'Não foi possível alterar a senha';
+      }
+      if (data?.error) return data.error;
+
+      return null;
+    } catch (error) {
+      console.error('Erro ao redefinir senha:', error);
+      return 'Não foi possível alterar a senha';
+    }
+  }, []);
 
   const deleteUser = useCallback(async (id: string, adminId: string, adminName: string): Promise<boolean> => {
     const user = users.find(u => u.id === id);
@@ -656,6 +695,7 @@ export const UsersProvider = ({ children }: { children: ReactNode }) => {
       refreshUsers,
       updateUser,
       deleteUser,
+      resetUserPassword,
       blockUser,
       unblockUser,
       changeUserRole,

@@ -29,7 +29,7 @@ const AdminUserEdit = () => {
     getUserById, updateUser, deleteUser, blockUser, unblockUser, 
     changeUserRole, changeUserPlan, adjustCredits, canManageRole,
     isMasterAdmin, getMasterAdminCount, isLoading,
-    extendUserPlan, setUserPlanExpiry
+    extendUserPlan, setUserPlanExpiry, resetUserPassword
   } = useUsers();
   
   const user = userId ? getUserById(userId) : null;
@@ -46,6 +46,7 @@ const AdminUserEdit = () => {
   const [newRole, setNewRole] = useState<UserRole>('USER');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [salvandoSenha, setSalvandoSenha] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const currentUserRole = currentUser?.role as UserRole || 'USER';
@@ -110,16 +111,24 @@ const AdminUserEdit = () => {
   };
 
   const handlePasswordChange = async () => {
-    if (!currentUser || !newPassword || newPassword !== confirmPassword || newPassword.length < 6) {
+    if (!currentUser || !user || !newPassword || newPassword !== confirmPassword || newPassword.length < 6) {
       toast({ title: 'Erro', description: 'Verifique os campos de senha', variant: 'destructive' });
       return;
     }
-    
-    // In a real app, this would call an API to change the password
-    // For mock, we'll just simulate success and log the action
-    await updateUser(user.id, {}, currentUser.id, currentUser.name);
-    
-    toast({ title: 'Senha alterada', description: 'A nova senha foi definida com sucesso' });
+
+    setSalvandoSenha(true);
+    const erro = await resetUserPassword(user.id, newPassword);
+    setSalvandoSenha(false);
+
+    if (erro) {
+      toast({ title: 'Erro ao alterar senha', description: erro, variant: 'destructive' });
+      return;
+    }
+
+    toast({
+      title: 'Senha alterada',
+      description: `${user.name} já pode entrar com a nova senha. Envie a senha para ele por um canal seguro.`,
+    });
     setNewPassword('');
     setConfirmPassword('');
   };
@@ -405,9 +414,13 @@ const AdminUserEdit = () => {
               variant="outline" 
               className="w-full"
               onClick={handlePasswordChange}
-              disabled={!newPassword || newPassword !== confirmPassword || newPassword.length < 6}
+              disabled={salvandoSenha || !newPassword || newPassword !== confirmPassword || newPassword.length < 6}
             >
-              <Save className="h-4 w-4 mr-2" /> Salvar Nova Senha
+              {salvandoSenha ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
+              ) : (
+                <><Save className="h-4 w-4 mr-2" /> Salvar Nova Senha</>
+              )}
             </Button>
             {newPassword && newPassword.length < 6 && (
               <p className="text-xs text-destructive">A senha deve ter no mínimo 6 caracteres</p>
