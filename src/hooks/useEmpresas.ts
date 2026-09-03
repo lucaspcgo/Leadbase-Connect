@@ -38,6 +38,8 @@ export interface EmpresaFilters {
   hasPhone?: boolean;
   hasSocios?: boolean;
   socioName?: string;
+  capitalMin?: number;
+  capitalMax?: number;
 }
 
 interface DbEmpresa {
@@ -431,6 +433,8 @@ export const useEmpresasPaginated = (
         p_tags: parsedFilters.tags && parsedFilters.tags.length > 0 ? parsedFilters.tags : null,
         p_busca_socio: parsedFilters.socioName || null,
         p_search: parsedFilters.search || null,
+        p_capital_min: parsedFilters.capitalMin ?? null,
+        p_capital_max: parsedFilters.capitalMax ?? null,
       });
 
       const endTime = performance.now();

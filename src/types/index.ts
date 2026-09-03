@@ -179,6 +179,8 @@ export interface EmpresaFilters {
   opcao_mei?: string;
   data_inicio_atividade_from?: Date;
   data_inicio_atividade_to?: Date;
+  capital_social_from?: number;
+  capital_social_to?: number;
   search?: string;
 }
 

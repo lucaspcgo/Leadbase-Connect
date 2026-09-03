@@ -1980,6 +1980,8 @@ export type Database = {
       get_empresas_public: {
         Args: {
           p_busca_socio?: string
+          p_capital_max?: number
+          p_capital_min?: number
           p_categoria_id?: string
           p_cnae?: string
           p_data_abertura_fim?: string

@@ -61,6 +61,8 @@ const BuscarEmpresas = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [dataAberturaInicio, setDataAberturaInicio] = useState('');
   const [dataAberturaFim, setDataAberturaFim] = useState('');
+  const [capitalMin, setCapitalMin] = useState('');
+  const [capitalMax, setCapitalMax] = useState('');
   const [hasEmail, setHasEmail] = useState(false);
   const [hasPhone, setHasPhone] = useState(false);
   const [hasSocios, setHasSocios] = useState(false);
@@ -84,6 +86,14 @@ const BuscarEmpresas = () => {
   // Validation: CNAE used to require location, but now we allow broad searches
   const cnaeRequiresLocation = false; // Removed restriction as requested
 
+  // Campo vazio ou lixo digitado nao vira filtro: 0 e um valor valido de capital,
+  // entao nao da para usar falsy aqui.
+  const parseCapital = (valor: string): number | undefined => {
+    if (valor.trim() === '') return undefined;
+    const numero = Number(valor);
+    return Number.isFinite(numero) && numero >= 0 ? numero : undefined;
+  };
+
   // Build filters object for server-side filtering
   const filters: EmpresaFilters = useMemo(() => ({
     search: search || undefined,
@@ -100,12 +110,14 @@ const BuscarEmpresas = () => {
     tags: selectedTags.length > 0 ? selectedTags : undefined,
     dataAberturaInicio: dataAberturaInicio || undefined,
     dataAberturaFim: dataAberturaFim || undefined,
+    capitalMin: parseCapital(capitalMin),
+    capitalMax: parseCapital(capitalMax),
     hasEmail: hasEmail || undefined,
     hasPhone: hasPhone || undefined,
     hasSocios: hasSocios || undefined,
     socioName: socioName || undefined,
   }), [search, uf, sitCadastral, municipio, cnae, cnaeRequiresLocation, porte, regimeTributario, matrizFilial,
-      categoriaId, selectedTags, dataAberturaInicio, dataAberturaFim,
+      categoriaId, selectedTags, dataAberturaInicio, dataAberturaFim, capitalMin, capitalMax,
       hasEmail, hasPhone, hasSocios, socioName]);
 
   // Use paginated hook with server-side filtering
@@ -154,20 +166,20 @@ const BuscarEmpresas = () => {
   // Check if any advanced filter is active
   const hasActiveAdvancedFilters = municipio || cnae || porte || regimeTributario || matrizFilial ||
     categoriaId || selectedTags.length > 0 || dataAberturaInicio || dataAberturaFim || 
-    hasEmail || hasPhone || hasSocios || socioName;
+    capitalMin || capitalMax || hasEmail || hasPhone || hasSocios || socioName;
 
   // Reset to page 1 when filters change and track search
   useEffect(() => {
     setCurrentPage(1);
     const hasFilters = search || uf || sitCadastral || municipio || cnae || porte || regimeTributario || matrizFilial ||
       categoriaId || selectedTags.length > 0 || dataAberturaInicio || dataAberturaFim ||
-      hasEmail || hasPhone || hasSocios || socioName;
+      capitalMin || capitalMax || hasEmail || hasPhone || hasSocios || socioName;
     if (hasFilters) {
       const searchTerm = search || uf || municipio || cnae || 'filtros';
       trackSearch(searchTerm);
     }
   }, [search, uf, sitCadastral, municipio, cnae, porte, regimeTributario, matrizFilial,
-      categoriaId, selectedTags, dataAberturaInicio, dataAberturaFim,
+      categoriaId, selectedTags, dataAberturaInicio, dataAberturaFim, capitalMin, capitalMax,
       hasEmail, hasPhone, hasSocios, socioName]);
 
 
@@ -185,6 +197,8 @@ const BuscarEmpresas = () => {
     setSelectedTags([]);
     setDataAberturaInicio('');
     setDataAberturaFim('');
+    setCapitalMin('');
+    setCapitalMax('');
     setHasEmail(false);
     setHasPhone(false);
     setHasSocios(false);
@@ -202,13 +216,16 @@ const BuscarEmpresas = () => {
     setSelectedTags(config.tag_ids || []);
     setDataAberturaInicio(config.data_inicio_atividade_from ? new Date(config.data_inicio_atividade_from).toISOString().split('T')[0] : '');
     setDataAberturaFim(config.data_inicio_atividade_to ? new Date(config.data_inicio_atividade_to).toISOString().split('T')[0] : '');
+    setCapitalMin(config.capital_social_from !== undefined && config.capital_social_from !== null ? String(config.capital_social_from) : '');
+    setCapitalMax(config.capital_social_to !== undefined && config.capital_social_to !== null ? String(config.capital_social_to) : '');
     setHasEmail(config.tem_email || false);
     setHasPhone(config.tem_telefone || false);
     setHasSocios(config.tem_socios || false);
     setSocioName(config.busca_socio || '');
     if (config.municipio || config.cnae_codigo || 
         config.categoria_id || config.tag_ids?.length > 0 || 
-        config.data_inicio_atividade_from || config.data_inicio_atividade_to || config.tem_email || 
+        config.data_inicio_atividade_from || config.data_inicio_atividade_to ||
+        config.capital_social_from !== undefined || config.capital_social_to !== undefined || config.tem_email || 
         config.tem_telefone || config.tem_socios || config.busca_socio) {
       setShowAdvancedFilters(true);
     }
@@ -230,6 +247,8 @@ const BuscarEmpresas = () => {
         sit_cadastral: sitCadastral || undefined,
         data_inicio_atividade_from: dataAberturaInicio ? new Date(dataAberturaInicio) : undefined,
         data_inicio_atividade_to: dataAberturaFim ? new Date(dataAberturaFim) : undefined,
+        capital_social_from: parseCapital(capitalMin),
+        capital_social_to: parseCapital(capitalMax),
         categoria_id: categoriaId || undefined,
         tag_ids: selectedTags.length > 0 ? selectedTags : undefined,
         tem_email: hasEmail || undefined,
@@ -730,6 +749,7 @@ const BuscarEmpresas = () => {
                       <Badge variant="secondary" className="ml-1">{
                          [municipio, cnae, porte, regimeTributario, matrizFilial, categoriaId, 
                           selectedTags.length > 0, dataAberturaInicio, dataAberturaFim,
+                          capitalMin, capitalMax,
                           hasEmail, hasPhone, hasSocios, socioName].filter(Boolean).length
                       }</Badge>
                     )}
@@ -865,6 +885,36 @@ const BuscarEmpresas = () => {
                       type="date" 
                       value={dataAberturaFim} 
                       onChange={(e) => setDataAberturaFim(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Row 4: Capital social */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1 min-w-0">
+                    <label className="text-xs font-medium text-muted-foreground">Capital Social (De)</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      inputMode="numeric"
+                      placeholder="R$ mínimo"
+                      value={capitalMin}
+                      onChange={(e) => setCapitalMin(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <label className="text-xs font-medium text-muted-foreground">Capital Social (Até)</label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1000"
+                      inputMode="numeric"
+                      placeholder="R$ máximo"
+                      value={capitalMax}
+                      onChange={(e) => setCapitalMax(e.target.value)}
                       className="w-full"
                     />
                   </div>
